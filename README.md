@@ -1,173 +1,170 @@
-# Zero-Trust RAG: Enterprise Data Governance via Pre-Retrieval RBAC
+# Zero-Trust RAG
 
-A research prototype that implements and **experimentally measures** whether
-moving authorization from *after* retrieval (retrieve-then-filter) to *before*
-retrieval (pre-retrieval RBAC) reduces unauthorized information exposure in an
-enterprise RAG system — and what that costs in retrieval quality, answer
-quality, and latency.
-
-The system is built as three explicit, comparable configurations:
-
-- **A — Baseline RAG**: retrieve over the whole corpus, no authorization.
-- **B — Retrieve-then-filter**: retrieve over the whole corpus, then drop
-  chunks the user is not allowed to see.
-- **C — Zero-Trust pre-retrieval RBAC**: authorize the document candidate set
-  *first*; the semantic retriever only ever searches authorized documents, so
-  unauthorized content cannot enter the retrieval results or LLM context.
-
-> **Academic positioning (no novelty claim).** Prior literature already covers
-> RAG privacy, enterprise access control, permission-aware RAG, and
-> authorization-first retrieval. The gap this project investigates is narrower:
-> *a unified Zero-Trust enterprise RAG architecture that operationalizes
-> pre-retrieval RBAC, least-privilege enforcement, continuous authorization,
-> auditability, and measurable security–retrieval-performance trade-offs.*
-> What is ours is the integrated experimental comparison of B vs C on one code
-> base with one synthetic corpus, an oracle-labeled query set, and defined
-> security/retrieval/generation/latency/auditability metrics.
-
----
-
-## Research question
-
-**Primary.** How can pre-retrieval RBAC based on Zero-Trust principles prevent
-unauthorized enterprise information from entering the RAG retrieval and LLM
-context pipeline?
-
-**Secondary.**
-1. Does pre-retrieval RBAC reduce unauthorized retrieval?
-2. How does it compare with retrieve-then-filter?
-3. What latency overhead does authorization introduce?
-4. Does authorization reduce retrieval precision/recall?
-5. Does the approach reduce sensitive-information leakage?
-6. Can every authorization decision be audited?
-7. How does RBAC compare with a more fine-grained policy mechanism?
-
-## Hypotheses
-
-| ID | Hypothesis |
-|----|------------|
-| H1 | Pre-retrieval RBAC reduces unauthorized context exposure vs. baseline RAG. |
-| H2 | Pre-retrieval RBAC reduces unauthorized retrieval vs. retrieve-then-filter. |
-| H3 | Pre-retrieval authorization introduces measurable latency overhead. |
-| H4 | Correctly configured authorization metadata keeps retrieval quality acceptable. |
-| H5 | Zero-Trust auditing improves traceability of authorization decisions. |
-
-The final report will **let the evidence decide** — the proposed architecture
-is not assumed to win.
-
-## Architecture (summary)
-
-Identity → role → RBAC policy engine → **authorized candidate set** →
-semantic retrieval → secure context construction → LLM → audit log.
+Enterprise RAG authorization engine. Pre-retrieval RBAC + ABAC policy enforcement that prevents unauthorized documents from ever reaching the retriever or LLM context.
 
 ```
- User
-   │  identity (user_id, role, department, tenant_id)
-   ▼
- RBAC Policy Engine ── deny-by-default, continuous/authz-per-query
-   │   authorized_docs = { d ∈ corpus : policy.allow(user, d.metadata) }
-   ▼
- Authorized Candidate Set   ←  the retriever is scoped to THIS set only
-   ▼
- Semantic Retrieval (dense FAISS, top-k)
-   ▼
- Secure Context Construction
-   ▼
- LLM → Response
-   ▼
- Audit Log (every decision, reconstructable)
+Zero-Trust RAG vs Traditional RAG
+
+Traditional (retrieve-then-filter):
+  Query → Search ALL docs → Filter unauthorized → LLM
+                              ↑ exposed in candidates
+
+Zero-Trust (pre-retrieval):
+  Query → Authorize user → Search AUTHORIZED docs only → LLM
+                            ↑ never sees unauthorized content
 ```
 
-## Repository layout
+## Features
 
-```
-zero-trust-rag/
-├── backend/                 # re-usable python package
-│   ├── api/                 # FastAPI routes (query, admin)
-│   ├── auth/                # identity verification (users, tokens)
-│   ├── rbac/                # policy engine + policy data
-│   ├── retrieval/           # embeddings, FAISS index, scoped search
-│   ├── generation/          # LLM provider abstraction (+ stub for tests)
-│   ├── audit/               # authorization audit store + trail
-│   └── evaluation/          # metric implementations
-├── data/
-│   ├── documents/           # synthetic corpus (text + metadata)
-│   ├── users/               # user/role seed data
-│   └── policies/            # RBAC policy definitions
-├── experiments/             # one runner per configuration
-│   ├── baseline/
-│   ├── retrieve_then_filter/
-│   └── pre_retrieval_rbac/
-├── evaluation/              # query set (oracle-labeled), metric aggregation
-├── results/                 # generated tables + figures
-├── tests/                   # unit + security case suites
-├── docs/                    # architecture, data model, RBAC, experiments, metrics
-├── requirements.txt
-├── docker-compose.yml
-└── README.md
-```
+- **Pre-retrieval authorization** — RBAC policy engine computes the authorized document set before any embedding search runs. Unauthorized content is structurally excluded.
+- **RBAC + ABAC hybrid** — Role-based grants gated by attribute predicates: sensitivity ceiling, business-unit clearance, user clearance level, time-window constraints.
+- **Three comparable configurations** — Baseline (A), retrieve-then-filter (B), and pre-retrieval RBAC (C) sharing identical corpus, embeddings, and retriever. Differences are attributable to authorization placement.
+- **Full audit trail** — Every authorization decision (allow/deny) is logged with subject, role, document, rule, reason, and timestamp. Append-only SQLite store.
+- **Deterministic & reproducible** — Seeded corpus generation, real embeddings (sentence-transformers), FAISS index. All experiment artifacts stored as JSON for full reproducibility.
+- **24 metrics** — Security (S1–S8), retrieval quality (R1–R4), generation quality (G1–G4), performance (P1–P4), auditability (U1–U3).
 
-## Quickstart
+## Quick Start
 
 ```bash
+# Clone
+git clone https://github.com/parhavigv/zero-trust-rag.git
+cd zero-trust-rag
+
+# Setup
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-python -m backend.scripts.build_corpus    # Phase 2: generate synthetic corpus
-python -m backend.scripts.build_index     # embed + index the corpus
-python -m pytest tests/ -q                 # run unit + security suites
-python -m experiments.run_all             # run A, B, C; write results/
-python -m evaluation.aggregate            # tables + figures
-uvicorn backend.api.app:app --reload      # optional interactive API
+
+# Generate corpus & index
+python -m backend.scripts.build_corpus    # 42 docs, 9 users, 34 queries
+python -m backend.scripts.build_index     # embed + FAISS index
+
+# Run tests
+python -m pytest tests -q                 # 47 tests
+
+# Run experiments
+python -m experiments.run_all             # A, B, C configs (RBAC policy)
+python -m experiments.run_all --policy abac  # ABAC hybrid variant
+python -m evaluation.aggregate            # results/comparison.md + abac_comparison.md
 ```
 
-## Experimental configurations (independent variable = *where authorization sits*)
+## Architecture
 
-| Config | Pipeline | Unauthorized doc can enter retrieval? |
-|--------|----------|--------------------------------------|
-| A baseline | retrieve → LLM | yes (always) |
-| B retrieve-then-filter | retrieve (all) → RBAC filter → LLM | yes (retrieved, then dropped) |
-| C pre-retrieval RBAC | RBAC scope → retrieve (authorized only) → LLM | **no** |
+```
+                    ┌──────────────┐
+                    │   User       │
+                    │ (id, role,   │
+                    │  dept, tenant)│
+                    └──────┬───────┘
+                           │
+                    ┌──────▼───────┐
+                    │  RBAC / ABAC │  ← deny-by-default, evaluated per query
+                    │  Policy      │
+                    │  Engine      │
+                    └──────┬───────┘
+                           │ authorized document IDs
+                    ┌──────▼───────┐
+                    │  Scoped      │  ← FAISS search over authorized subset only
+                    │  Retriever   │
+                    └──────┬───────┘
+                           │ top-k authorized chunks
+                    ┌──────▼───────┐
+                    │  Context     │
+                    │  Builder     │
+                    └──────┬───────┘
+                           │
+                    ┌──────▼───────┐
+                    │  LLM         │
+                    │  Provider    │
+                    └──────┬───────┘
+                           │
+                    ┌──────▼───────┐
+                    │  Audit Log   │  ← append-only, every decision traced
+                    └──────────────┘
+```
 
-All three share: corpus, embeddings, index, retriever, `k`, query set, LLM
-provider. Only the authorization placement differs — so observed differences
-are attributable to authorization placement, not to the retriever.
+## Configurations
 
-## Status (phases)
+| Config | Authorization | Unauthorized doc in retrieval? |
+|--------|:---:|:---:|
+| **A** — Baseline | None | Yes |
+| **B** — Retrieve-then-filter | Post-retrieval filter | Yes (retrieved, then dropped) |
+| **C** — Pre-retrieval RBAC | Pre-retrieval scope | **No** |
 
-| Phase | Deliverable | Status |
-|-------|-------------|--------|
-| 1 | Architecture + README + models + experiment & metric design | ✅ |
-| 2 | Synthetic corpus + oracle-labeled query set | ✅ 42 docs, 9 users, 26 queries |
-| 3 | Users, roles, permissions, RBAC engine (deny-by-default) | ✅ |
-| 4 | Baseline RAG (A) | ✅ |
-| 5 | Retrieve-then-filter (B) | ✅ |
-| 6 | Pre-retrieval RBAC (C) | ✅ |
-| 7 | Audit logging | ✅ SQLite store, 1352 decisions |
-| 8 | Security test cases | ✅ 36 tests passing |
-| 9 | Evaluation metrics | ✅ 24 metrics implemented |
-| 10 | Run experiments | ✅ 26 queries × 3 configs |
-| 11 | Comparison tables + figures | ✅ `results/comparison.md` + 4 charts |
-| 12 | Findings, limitations, future work | ✅ `docs/findings.md` |
+All three share: corpus, embeddings, index, retriever, `k`, query set, provider. Only the authorization placement differs.
 
-## Headline measured result
+## Project Structure
 
-On the seeded synthetic corpus, unauthorized content in the LLM context dropped
-from **0.646 → 0.000** (S1) and unauthorized docs in candidate lists from
-**84/178 → 0** (S3) when moving from baseline / retrieve-then-filter to
-pre-retrieval RBAC, at a measured authorization cost of ~0.86 ms/query.
-Retrieval quality was not degraded (recall equal, ranking metrics slightly
-better under C). All numbers are artifacts of this repository — see
-`docs/findings.md` and `results/comparison.md`.
+```
+zero-trust-rag/
+├── backend/
+│   ├── api/                    # API routes (planned)
+│   ├── auth/                   # Identity verification
+│   ├── rbac/                   # Policy engine + attribute predicates
+│   ├── retrieval/              # Embeddings, FAISS index, scoped search
+│   ├── generation/             # LLM provider abstraction
+│   ├── audit/                  # Authorization audit store
+│   ├── evaluation/             # Metric implementations
+│   └── scripts/                # Corpus & index builders
+├── data/
+│   ├── documents/              # Synthetic corpus (text + metadata)
+│   ├── users/                  # User/role seed data
+│   ├── queries/                # Oracle-labeled evaluation queries
+│   └── policies/               # RBAC + ABAC policy definitions
+├── experiments/                # Configuration runners (A, B, C)
+├── evaluation/                 # Metric aggregation + reporting
+├── tests/                      # Unit + security test suites
+├── docs/                       # Architecture, data model, authorization, metrics
+└── results/                    # Generated tables + run records
+```
 
-## Integrity & reporting rules
+## Configuration
 
-- No fabricated citations, results, datasets, or claims.
-- Until experiments actually run, the report states **"Not yet evaluated."**
-- Claims are clearly separated into: *literature-supported*,
-  *system implementation*, *experimental results*, *researcher interpretation*.
-- Implementation decisions not grounded in literature are flagged as
-  **engineering design choices**.
+### Environment Variables
 
-See `docs/` for the architecture, data model, RBAC policy model, experiment
-design, evaluation metrics, and security threat model.
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ZTRUST_SEED` | `20260908` | Random seed for reproducible corpus generation |
+| `ZTRUST_TOP_K` | `5` | Number of chunks returned by the retriever |
+| `ZTRUST_K_CAND` | `10` | Candidate pool size for retrieve-then-filter (config B) |
+| `ZTRUST_EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Embedding model |
+| `ZTRUST_DATA` | `./data` | Data directory path |
+| `ZTRUST_RESULTS` | `./results` | Results output directory |
+
+### Policy Files
+
+| File | Description |
+|------|-------------|
+| `data/policies/policies.json` | RBAC policy — role/classification matrix, overrides |
+| `data/policies/policies_abac.json` | ABAC hybrid policy — adds attribute predicates to RBAC grants |
+
+## Benchmarks
+
+Measured on the synthetic corpus (42 docs, 9 users, 34 queries):
+
+| Metric | A (baseline) | B (filter) | C (pre-retrieval) |
+|--------|:---:|:---:|:---:|
+| Unauthorized in context (S1) | **0.671** | 0.000 | **0.000** |
+| Unauthorized in candidates (S3) | 114 | **242** | **0** |
+| Denial correctness (S6) | 0.00 | 1.00 | **1.00** |
+| Recall@k (R1) | 1.00 | 1.00 | 1.00 |
+| Authorization latency (P2) | 0.00 ms | 0.25 ms | 0.78 ms |
+| End-to-end latency (P1) | 19.0 ms | 18.5 ms | 19.1 ms |
+
+Full results: [`results/comparison.md`](results/comparison.md), [`results/abac_comparison.md`](results/abac_comparison.md)
+
+## Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [Architecture](docs/architecture.md) | System pipeline, configuration design, module responsibilities |
+| [Data Model](docs/data-model.md) | Document, User, Query schemas and conventions |
+| [Authorization](docs/authorization.md) | RBAC + ABAC policy model, rule ordering, Zero-Trust mapping |
+| [Benchmarking](docs/benchmarking.md) | Experiment design, A/B/C configurations, threat model |
+| [Metrics](docs/metrics.md) | 24-metric evaluation framework (security, retrieval, performance) |
+| [Results](docs/results.md) | Measured outcomes, ABAC ablation, limitations |
+| [Configuration](docs/configuration.md) | Environment variables, policy config reference |
+
+## License
+
+Research prototype — see repository for details.

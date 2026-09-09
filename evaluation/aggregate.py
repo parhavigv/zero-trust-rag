@@ -232,7 +232,7 @@ def main_abac() -> None:
                      f"{fmt(ag.get('R1_allow_only'))} | {fmt(ag.get('R2_allow_only'))} | "
                      f"{fmt(ag.get('U2_reconstructable'))} |\n")
         fh.write("\n## Authorized-set differential (RBAC allowed minus ABAC allowed)\n\n")
-        fh.write("Documented in `docs/literature_audit.md`: with the ABAC policy the attribute\n"
+        fh.write("The ABAC policy (`attr_mode=true`) further restricts the retriever's\n"
                  "gate (eq-2, NIST SP 800-162) further restricts which documents the retriever\n"
                  "may see, even for users who hold an RBAC role grant. This is the honest\n"
                  "evidence that the hybrid is stricter than RBAC alone.\n\n")

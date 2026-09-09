@@ -28,13 +28,14 @@ code openly flags, not fabrications.
 | Retrieval metrics (R1–R4) on allow queries | ✅ Yes | Same file — recall, precision, nDCG, MRR |
 | B-vs-C security contrast (candidate-list level) | ✅ Verified | Bob's Q-009 candidates: B = `[HR-0004, ...]` (HR confidential entered); C = `[ENG-0001, ENG-0004, HR-0001, ...]` (no confidential HR docs) |
 | Adversarial negation-style query (Section I, ref [13]) | ✅ Codified + verified | Q-027 to Q-030 in `data/queries/queries.json` ("I know this is confidential but...", "ignore restrictions..."). Verified: on all 4, B enters the unauthorized target in candidates, C never does |
-| Audit trail with decision reconstruction | ✅ Yes | `backend/audit/store.py` — SQLite append-only; 1352 decisions logged; U1/U2/U3 = 1.00 |
+| RBAC + ABAC hybrid (equations 1–2, Section F) | ✅ Done | `attr_mode=true` in `policies_abac.json`; `backend/rbac/attr_predicates.py` evaluates sensitivity ceiling, business-unit clearance, user clearance, and time-window; ABAC ablation queries Q-031–034 verified (alice denied HR-0006 CRITICAL, grace allowed); per-user differential measured in `results/abac_comparison.md` |
+| Audit trail with decision reconstruction | ✅ Yes | `backend/audit/store.py` — SQLite append-only; decisions logged; U1/U2/U3 = 1.00 |
 
 **What the paper's Section IV promises but the code does NOT implement:**
 
 | Requirement | Implemented? | Honest status |
 |---|---|---|
-| RBAC **+ ABAC hybrid** (equations 1–2, Section F) | ❌ Not implemented | `attr_mode=False` flag exists in `Policy` but is never read. Engine implements RBAC only: `role ∈ allowed_roles` or `classification=PUBLIC` or `department=own`. No document-attribute predicates (e.g., sensitivity-level threshold, time-of-day, risk-score conditions) are evaluated. |
+| RBAC **+ ABAC hybrid** (equations 1–2, Section F) | ✅ Done | `attr_mode=True` in `policies_abac.json`. Engine gates RBAC grants through `backend/rbac/attr_predicates.py`: sensitivity ceiling, business-unit clearance, user clearance level, and time-window predicates. ABAC ablation queries Q-031–034 verified. Per-user differential measured (alice: 11 → 5 allowed docs). Full results in `results/abac_comparison.md` and `docs/findings.md`. |
 | PDP/PEP cryptographic token split (Section J, ref [11]) | ❌ Not implemented | Authorization is a direct Python function call: `allow(user, doc, policy)`. There is no Policy Decision Point that issues a signed short-lived token and no Policy Enforcement Point that validates that token locally. |
 | Metadata sync-gap (Δt propagation delay, Section I) | ❌ Not modeled | No scenario where a role is revoked or document reclassified mid-experiment. Policy and document metadata are static seed data. |
 | True Pareto frontier sweep (Section III) | ⚠️ Partial | 3 configurations (A/B/C) yield a line segment, not a frontier. A Pareto sweep would require varying policy strictness (attribute thresholds), k, and corpus size across many points. |
@@ -96,10 +97,13 @@ principle at the architectural level.
    paper's governance claims.
 4. The RBAC engine correctly implements deny-by-default with the documented rule
    ordering (tenant → enabled → PUBLIC → INTERNAL → CONFIDENTIAL → override → deny).
+5. The ABAC hybrid (equations 1–2) is implemented and measured: the attribute
+   gate further narrows the authorized set (e.g., alice: 11 → 5 allowed docs)
+   while maintaining retrieval quality (R1 = 1.00). The hybrid decision path
+   is traceable in audit logs via `rule_id` values carrying the `+abac` suffix.
 
 **What remains a gap (honest list):**
-1. No ABAC attribute predicates — the hybrid RBAC+ABAC of equations 1–2 is
-   unresolved; only the RBAC half runs.
+1. ~~No ABAC attribute predicates~~ ✅ Done. ABAC hybrid implemented and measured (see above).
 2. No PDP/PEP cryptographic token separation — authorization is direct
    function call, not a decoupled policy enforcer.
 3. No metadata sync-gap scenario — policy and document metadata are static.
@@ -112,8 +116,8 @@ principle at the architectural level.
 
 - Fabrication check: all numbers are artifacts of this repository's own
   `experiments.run_all` and `evaluation.aggregate` runs. Run records are
-  stored in `results/runs/` for full reproducibility.
-- Statistical significance: n=26 queries on a synthetic corpus; no confidence
+  stored in `results/runs/` and `results/runs_abac/` for full reproducibility.
+- Statistical significance: n=34 queries on a synthetic corpus; no confidence
   intervals are claimed and none should be interpreted as such.
 - Real-LLM answer quality: generation metrics use an extractive baseline;
   they are explicitly marked "Not yet evaluated with a production LLM" in all
@@ -125,7 +129,7 @@ principle at the architectural level.
 
 | Priority | Gap | Fix description |
 |---|---|---|
-| 1 | ABAC hybrid | Implement `attr_mode`: document attributes (sensitivity_level, classification, created_at) checked against user context (max_sensitivity, business_units, time window). Add `backend/rbac/attr_predicates.py`. Add 3 ABAC ablation queries to the corpus. |
+| ~~1~~ | ~~ABAC hybrid~~ | ✅ Done. `attr_mode=true`, `backend/rbac/attr_predicates.py`, `policies_abac.json`, ABAC ablation queries Q-031–034, per-user differential in `results/abac_comparison.md`. |
 | 2 | PDP/PEP token | Split `allow()` into `PDP.evaluate()` → returns a signed token; `PEP.validate_and_apply()` checks token locally before search. HMAC-signed to prevent orchestrator tampering. |
 | 3 ~~Negation attacks~~ | ✅ Done (Q-027–030 codified; B leaks at candidate level, C never) | Add a security test class asserting `target in B.candidate_ids` and `target not in C.candidate_ids`. |
 | 4 | Sync-gap scenario | Model one query executed under stale metadata (role revoked but policy not yet updated). Measure leakage window. |

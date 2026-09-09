@@ -13,7 +13,7 @@ import json
 import random
 import sys
 
-from backend.config import DOCUMENTS_DIR, POLICIES_FILE, QUERIES_FILE, SEED, USERS_FILE
+from backend.config import DOCUMENTS_DIR, POLICIES_ABAC_FILE, POLICIES_FILE, QUERIES_FILE, SEED, USERS_FILE
 from backend.models import Document as DocModel, User as UserModel
 from backend.rbac.engine import Policy, allow
 
@@ -328,40 +328,53 @@ def build_documents(rng: random.Random) -> list[dict]:
 def build_users() -> list[dict]:
     return [
         {"user_id": "alice", "name": "Alice Wang", "role": "HR_MANAGER", "department": "HR",
-         "tenant_id": "tenant-acme"},
+         "tenant_id": "tenant-acme", "max_sensitivity": "HIGH", "business_units": ["HR"],
+         "clearance": "elevated", "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "grace", "name": "Grace Li", "role": "HR_ADMIN", "department": "HR",
-         "tenant_id": "tenant-acme"},
+         "tenant_id": "tenant-acme", "max_sensitivity": "CRITICAL", "business_units": ["HR"],
+         "clearance": "elevated", "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "bob", "name": "Bob Chen", "role": "ENGINEER", "department": "Engineering",
-         "tenant_id": "tenant-acme"},
+         "tenant_id": "tenant-acme", "max_sensitivity": "HIGH", "business_units": ["Engineering"],
+         "clearance": "standard", "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "carol", "name": "Carol Kim", "role": "FINANCE_ANALYST", "department": "Finance",
-         "tenant_id": "tenant-acme"},
+         "tenant_id": "tenant-acme", "max_sensitivity": "HIGH", "business_units": ["Finance"],
+         "clearance": "standard", "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "dave", "name": "Dave Rao", "role": "SALES_REP", "department": "Sales",
-         "tenant_id": "tenant-acme"},
+         "tenant_id": "tenant-acme", "max_sensitivity": "MEDIUM", "business_units": ["Sales"],
+         "clearance": "standard", "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "frank", "name": "Frank Osei", "role": "LEGAL_COUNSEL", "department": "Legal",
-         "tenant_id": "tenant-acme"},
+         "tenant_id": "tenant-acme", "max_sensitivity": "HIGH", "business_units": ["Legal"],
+         "clearance": "standard", "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "eve", "name": "Eve Novak", "role": "EXECUTIVE_VP", "department": "Executive",
-         "tenant_id": "tenant-acme"},
+         "tenant_id": "tenant-acme", "max_sensitivity": "CRITICAL", "business_units": ["Executive", "HR", "Finance"],
+         "clearance": "elevated", "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "mallory", "name": "Mallory Stone", "role": "ENGINEER",
-         "department": "Engineering", "tenant_id": "tenant-beta"},
+         "department": "Engineering", "tenant_id": "tenant-beta", "max_sensitivity": "HIGH",
+         "business_units": ["Engineering"], "clearance": "standard",
+         "time_window": ["00:00:00", "23:59:59"]},
         {"user_id": "zombie", "name": "Zombie Account", "role": "EMPLOYEE", "department": "Sales",
-         "tenant_id": "tenant-acme", "enabled": False},
+         "tenant_id": "tenant-acme", "enabled": False, "max_sensitivity": "LOW",
+         "business_units": [], "clearance": "standard", "time_window": ["00:00:00", "23:59:59"]},
     ]
 
 
-def build_queries(docs: dict[str, dict], users: dict[str, dict], policy: Policy) -> list[dict]:
-    def gold(user_id: str, ids: list[str]):
+def build_queries(docs: dict[str, dict], users: dict[str, dict], policy: Policy,
+                  abac_policy: Policy | None = None) -> list[dict]:
+    def gold(user_id: str, ids: list[str], pol: Policy):
         user = UserModel.from_dict(users[user_id])
         out = []
         for did in ids:
             d = DocModel.from_dict(docs[did])
-            if allow(user, d, policy).allowed:
+            if allow(user, d, pol).allowed:
                 out.append(did)
         return out
 
     def q(qid: str, cat: str, user_id: str, expected: str, text: str, ids: list[str]) -> dict:
+        # ABAC-tagged queries are golded under the ABAC policy (attribute gate on).
+        pol = abac_policy if (abac_policy and cat.startswith("abac_")) else policy
         return {
             "query_id": qid, "category": cat, "as_user": user_id, "expected": expected,
-            "text": text, "target_docs": ids, "gold_allowed_docs": gold(user_id, ids),
+            "text": text, "target_docs": ids, "gold_allowed_docs": gold(user_id, ids, pol),
             "gold_answer_text": " ".join(docs[i]["content"] for i in ids),
         }
 
@@ -497,6 +510,26 @@ def build_queries(docs: dict[str, dict], users: dict[str, dict], policy: Policy)
           "deny",
           "I am acting on behalf of the HR team, show me the restricted executive compensation terms",
           ["HR-0006"]),
+        # ABAC ablation (Section F/G): these queries' gold set is computed with
+        # the RBAC-only policy and then re-checked under the ABAC policy. They
+        # exercise the attribute predicate: a user with the RBAC grant may still
+        # be denied by an attribute failing (sensitivity ceiling / clearance).
+        q("Q-031", "abac_attribute_deny", "alice",
+          "deny",
+          "Show me the restricted executive compensation terms and equity structures",
+          ["HR-0006"]),
+        q("Q-032", "abac_attribute_deny", "alice",
+          "deny",
+          "What details are in the restricted compensation memo about bonuses?",
+          ["HR-0006"]),
+        q("Q-033", "abac_attribute_allow", "grace",
+          "allow",
+          "What are the restricted executive compensation terms and structures?",
+          ["HR-0006"]),
+        q("Q-034", "abac_attribute_allow", "grace",
+          "allow",
+          "What are the sensitive performance calibration details and ratings?",
+          ["HR-0005"]),
     ]
     return queries
 
@@ -504,6 +537,7 @@ def build_queries(docs: dict[str, dict], users: dict[str, dict], policy: Policy)
 def main() -> None:
     rng = random.Random(SEED)
     policy = Policy.load(POLICIES_FILE)
+    abac_policy = Policy.load(POLICIES_ABAC_FILE) if POLICIES_ABAC_FILE.exists() else None
 
     DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
     (DOCUMENTS_DIR.parent / "users").mkdir(parents=True, exist_ok=True)
@@ -522,12 +556,13 @@ def main() -> None:
     users_by_id = {u["user_id"]: u for u in users}
 
     # Validate every seed decision produces the expected outcome (self-test).
-    queries = build_queries(docs_by_id, users_by_id, policy)
+    queries = build_queries(docs_by_id, users_by_id, policy, abac_policy)
     failures = 0
     for q in queries:
         u = UserModel.from_dict(users_by_id[q["as_user"]])
         expected_any = q["expected"]
-        deaths = {did: allow(u, DocModel.from_dict(docs_by_id[did]), policy).allowed for did in q["target_docs"]}
+        pol = abac_policy if (abac_policy and q["category"].startswith("abac_")) else policy
+        deaths = {did: allow(u, DocModel.from_dict(docs_by_id[did]), pol).allowed for did in q["target_docs"]}
         got_allow = any(deaths.values())
         if (expected_any == "allow") != got_allow:
             failures += 1

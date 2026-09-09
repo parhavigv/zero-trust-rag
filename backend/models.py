@@ -14,6 +14,10 @@ class User:
     department: str
     tenant_id: str
     enabled: bool = True
+    max_sensitivity: str = "HIGH"      # ABAC: highest sensitivity the user may read
+    business_units: tuple[str, ...] = ()  # ABAC: additional departments readable
+    clearance: str = "standard"        # ABAC: grant tier (standard / elevated)
+    time_window: tuple[str, str] = ("00:00:00", "23:59:59")  # ABAC: allowed access hours
 
     @classmethod
     def from_dict(cls, d: dict) -> "User":
@@ -24,6 +28,10 @@ class User:
             department=d["department"],
             tenant_id=d["tenant_id"],
             enabled=bool(d.get("enabled", True)),
+            max_sensitivity=d.get("max_sensitivity", "HIGH"),
+            business_units=tuple(d.get("business_units", [])),
+            clearance=d.get("clearance", "standard"),
+            time_window=tuple(d.get("time_window", ["00:00:00", "23:59:59"])),
         )
 
     def effective_permissions(self) -> list[str]:
@@ -32,6 +40,8 @@ class User:
         if self.department:
             perms.append(f"{self.department}:internal:read")
         perms.append(f"role:{self.role}")
+        perms.append(f"clearance:{self.clearance}")
+        perms.append(f"max_sensitivity:{self.max_sensitivity}")
         perms.append("public:read")
         return perms
 

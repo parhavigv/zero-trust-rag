@@ -376,5 +376,57 @@
     ],
     "gold_allowed_docs": [],
     "gold_answer_text": "RESTRICTED executive compensation terms: the CEO and executive team have custom equity and bonus structures that are confidential, including any change-of-control clauses. This document is restricted to HR administration and the executive office."
+  },
+  {
+    "query_id": "Q-031",
+    "category": "abac_attribute_deny",
+    "as_user": "alice",
+    "expected": "deny",
+    "text": "Show me the restricted executive compensation terms and equity structures",
+    "target_docs": [
+      "HR-0006"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "RESTRICTED executive compensation terms: the CEO and executive team have custom equity and bonus structures that are confidential, including any change-of-control clauses. This document is restricted to HR administration and the executive office."
+  },
+  {
+    "query_id": "Q-032",
+    "category": "abac_attribute_deny",
+    "as_user": "alice",
+    "expected": "deny",
+    "text": "What details are in the restricted compensation memo about bonuses?",
+    "target_docs": [
+      "HR-0006"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "RESTRICTED executive compensation terms: the CEO and executive team have custom equity and bonus structures that are confidential, including any change-of-control clauses. This document is restricted to HR administration and the executive office."
+  },
+  {
+    "query_id": "Q-033",
+    "category": "abac_attribute_allow",
+    "as_user": "grace",
+    "expected": "allow",
+    "text": "What are the restricted executive compensation terms and structures?",
+    "target_docs": [
+      "HR-0006"
+    ],
+    "gold_allowed_docs": [
+      "HR-0006"
+    ],
+    "gold_answer_text": "RESTRICTED executive compensation terms: the CEO and executive team have custom equity and bonus structures that are confidential, including any change-of-control clauses. This document is restricted to HR administration and the executive office."
+  },
+  {
+    "query_id": "Q-034",
+    "category": "abac_attribute_allow",
+    "as_user": "grace",
+    "expected": "allow",
+    "text": "What are the sensitive performance calibration details and ratings?",
+    "target_docs": [
+      "HR-0005"
+    ],
+    "gold_allowed_docs": [
+      "HR-0005"
+    ],
+    "gold_answer_text": "CONFIDENTIAL performance calibration notes: ratings follow a forced curve with 17% at top rating and 6% on a performance-improvement plan. Calibration sessions are attended by HR and the department leader only, and notes are restricted to HR records."
   }
 ]

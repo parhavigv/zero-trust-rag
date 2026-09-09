@@ -12,7 +12,7 @@
 |------|-------|
 | Corpus | 42 synthetic docs, 6 departments + tenant-beta, seeded build |
 | Users | 9 (roles, depts, two tenants, one disabled) |
-| Queries | 30 oracle-labeled (9 allow / 21 deny, incl. 4 negation attacks) |
+| Queries | 34 oracle-labeled (11 allow / 23 deny, incl. 4 negation attacks + 4 ABAC ablation) |
 | Embeddings | sentence-transformers `all-MiniLM-L6-v2` (real model, CPU) |
 | Index / retriever | FAISS `IndexFlatIP` (cosine), shared across A/B/C |
 | Generation | extractive provider (deterministic sentence pick) |
@@ -23,28 +23,73 @@
 
 | Metric | A baseline | B retrieve-then-filter | C pre-retrieval RBAC |
 |--------|-----------:|------------------------:|---------------------:|
-| S1 unauthorized share in context | **0.673** | 0.000 | **0.000** |
-| S2 unauthorized docs in context (mean) | **3.37** | 0.00 | **0.00** |
-| S3 unauthorized docs in candidate lists (total) | 101 | **211** | **0** |
-| S5 security-balanced | 0.68 | 1.00 | **1.00** |
+| S1 unauthorized share in context | **0.671** | 0.000 | **0.000** |
+| S2 unauthorized docs in context (mean) | **3.35** | 0.00 | **0.00** |
+| S3 unauthorized docs in candidate lists (total) | 114 | **242** | **0** |
+| S5 security-balanced | 0.665 | 1.00 | **1.00** |
 | S6 denial-correctness | 0.00 | 1.00 | **1.00** |
 | S7 false-deny (over-block) rate | 0.00 | 0.00 | 0.00 |
-| S8 deny authz latency mean (ms) | 0.00 | 0.27 | 0.86 |
+| S8 deny authz latency mean (ms) | 0.00 | 0.25 | 0.76 |
 | R1 recall@k (allow queries) | 1.00 | 1.00 | 1.00 |
-| R3 nDCG@k (allow queries) | 0.848 | 0.848 | 0.877 |
-| R4 MRR (allow queries) | 0.796 | 0.796 | 0.833 |
-| P1 end-to-end latency mean (ms) | 33.8 | 31.1 | 31.8 |
-| P2 authz-stage latency mean (ms) | 0.00 | 0.28 | 0.86 |
+| R3 nDCG@k (allow queries) | 0.876 | 0.876 | 0.899 |
+| R4 MRR (allow queries) | 0.833 | 0.833 | 0.864 |
+| P1 end-to-end latency mean (ms) | 19.0 | 18.5 | 19.1 |
+| P2 authz-stage latency mean (ms) | 0.00 | 0.25 | 0.78 |
 | U1 decision-trace completeness | n/a | 1.00 | 1.00 |
 | U2 reconstructable runs | 1.00 | 1.00 | 1.00 |
 | U3 all decisions logged | 1.00 | 1.00 | 1.00 |
+
+## ABAC hybrid ablation (Section F/G, equation 2)
+
+The ABAC hybrid (`attr_mode=true`) adds attribute predicates to RBAC grants.
+Each document-attribute vector is checked against user attributes; the grant
+is only honored when **all** predicates hold:
+
+| Predicate | Implementation |
+|-----------|----------------|
+| Sensitivity ceiling | `doc.sensitivity_level <= user.max_sensitivity` |
+| Business-unit clearance | `doc.department ∈ user.business_units` |
+| User clearance | `doc.classification ≤ user.clearance` |
+| Time window | `user.time_window` contains current time |
+
+**Measured differential (RBAC allowed set → ABAC allowed set):**
+
+| User | RBAC allowed | ABAC allowed | Removed by attribute gate |
+|------|:-----------:|:-----------:|:------------------------:|
+| alice (HR_MANAGER) | 11 | 5 | 6 (ENG-0001, EXE-0001, FIN-0001, HR-0006, LEG-0001, SAL-0001) |
+| grace (HR_ADMIN) | 11 | 6 | 5 (ENG-0001, EXE-0001, FIN-0001, LEG-0001, SAL-0001) |
+| bob (ENGINEER) | 11 | 5 | 6 (ENG-0006, EXE-0001, FIN-0001, HR-0001, LEG-0001, SAL-0001) |
+| dave (SALES_REP) | 11 | 3 | 8 (ENG-0001, EXE-0001, FIN-0001, HR-0001, LEG-0001, SAL-0004, SAL-0005, SAL-0006) |
+| eve (EXECUTIVE_VP) | 16 | 10 | 6 (ENG-0001, ENG-0006, LEG-0001, LEG-0006, SAL-0001, SAL-0006) |
+
+**Key ablation queries (C config, ABAC policy):**
+
+| Query | User | Expected | Result | ABAC deny reason |
+|-------|------|----------|--------|-----------------|
+| Q-031 | alice | deny | deny | HR-0006 sensitivity CRITICAL exceeds user max HIGH |
+| Q-032 | alice | deny | deny | HR-0006 sensitivity CRITICAL exceeds user max HIGH |
+| Q-033 | grace | allow | allow | grant + attributes satisfied (CRITICAL ≤ CRITICAL) |
+| Q-034 | grace | allow | allow | grant + attributes satisfied (CRITICAL ≤ CRITICAL) |
+
+**ABAC security metrics (23 evaluated queries under ABAC policy):**
+
+| Config | S1 (unauth ctx) | S6 (denial-correct) | R1 (allow recall) |
+|--------|:---:|:---:|:---:|
+| A baseline (abac) | **0.930** | 0.000 | 1.000 |
+| B retrieve-then-filter (abac) | 0.000 | 1.000 | 1.000 |
+| C pre-retrieval RBAC (abac) | 0.000 | 1.000 | 1.000 |
+
+The ABAC gate narrows the retriever's scope further than RBAC alone, with
+zero reduction in retrieval quality (R1 = 1.00). HR-0006 (CRITICAL) is correctly
+excluded from alice's retrieval scope despite her HR_MANAGER role, while grace
+(HR_ADMIN, CRITICAL clearance) retains access.
 
 ## Hypothesis evaluation
 
 | ID | Hypothesis | Verdict | Evidence |
 |----|------------|---------|----------|
 | H1 | Pre-retrieval RBAC reduces unauthorized context vs baseline | **Supported** | S1 0.646 → 0.000; S2 3.23 → 0.00 |
-| H2 | Pre-retrieval RBAC reduces unauthorized retrieval vs retrieve-then-filter | **Supported** | S3: C returns 0 unauthorized candidates; B returns 211 (retrieved-then-dropped). On all 4 negation-attack queries (Q-027–030) B surfaces the unauthorized target in candidates while C never does |
+| H2 | Pre-retrieval RBAC reduces unauthorized retrieval vs retrieve-then-filter | **Supported** | S3: C returns 0 unauthorized candidates; B returns 242 (retrieved-then-dropped). On all 4 negation-attack queries (Q-027–030) B surfaces the unauthorized target in candidates while C never does. Under the ABAC hybrid the same pattern holds: B surfaces HR-0006 in candidates while C excludes it |
 | H3 | Authorization adds measurable latency | **Supported (small)** | C adds ~0.86 ms vs A 0.00 ms (<3% of ~32 ms total) |
 | H4 | Authorization metadata keeps retrieval quality acceptable | **Supported on this corpus** | R1 equal at 1.00; R3/MRR slightly *higher* under C (0.877 vs 0.848) |
 | H5 | Auditing improves traceability | **Supported** | U1/U2/U3 = 1.00 for B and C; A has no pre-authz decision stage by design |
@@ -70,9 +115,12 @@ does not. This is the root of the B-vs-C security difference in H2.
 6. **Can every authorization decision be audited?** Yes by design: U1/U3 = 1.00
    and every decision row carries subject, role, dept, object, classification,
    tenant, rule_id, reason, effector, timestamp.
-7. **How does RBAC compare with fine-grained policy?** **Not yet evaluated.**
-   The attribute-based variant (`attr_mode`) is implemented as a policy
-   configuration but has not been run in this checkpoint.
+7. **How does RBAC compare with fine-grained policy?** **Evaluated.** The ABAC
+   hybrid (`attr_mode=true`) further narrows the authorized set (alice goes from
+   11 → 5 allowed docs, dave from 11 → 3) while maintaining R1 = 1.00 on allow
+   queries. HR-0006 (CRITICAL) is excluded from alice's scope despite HR_MANAGER
+   role, while grace (CRITICAL clearance) retains access — the attribute gate is
+   working as designed per equation (2) of the literature review.
 
 ## Limitations
 
@@ -83,8 +131,9 @@ does not. This is the root of the B-vs-C security difference in H2.
    **Real-model generation metrics: Not yet evaluated.**
 3. **No hybrid retrieval.** Dense-only; sparse/hybrid could change ranking but
    is orthogonal to authorization placement (flagged as future work).
-4. **Static RBAC policy.** No attribute-conditions ablation (secondary Q7) has
-   been measured yet.
+4. **ABAC ablation is policy-seeded, not sweep-tested.** The ABAC hybrid works
+   on the seeded attribute predicates; a full Pareto sweep of attribute-condition
+   thresholds and policy strictness levels is not yet performed.
 5. **Identity is a static seed set.** No real IdP/OIDC/token verification; the
    `auth` module resolves users from `users.json` for the prototype.
 6. **Single-thread CPU timings.** Latency deltas are sub-millisecond; throughput
@@ -108,10 +157,11 @@ does not. This is the root of the B-vs-C security difference in H2.
 ```bash
 python -m venv .venv && .venv\Scripts\activate          # Windows
 pip install -r requirements.txt
-python -m backend.scripts.build_corpus    # 42 docs, 9 users, 26 queries
-python -m experiments.run_all             # A, B, C over all queries
-python -m evaluation.aggregate            # results/comparison.md + figures
-python -m pytest tests -q                 # 36 tests
+python -m backend.scripts.build_corpus    # 42 docs, 9 users, 34 queries
+python -m experiments.run_all             # A, B, C over all queries (RBAC policy)
+python -m experiments.run_all --policy abac  # A, B, C over ABAC-tagged queries
+python -m evaluation.aggregate            # results/comparison.md + abac_comparison.md
+python -m pytest tests -q                 # 47 tests
 ```
 
 The corpus/query generation is seeded (`ZTRUST_SEED`), and run records are
@@ -125,3 +175,5 @@ stored under `results/runs/<CONFIG>/<QUERY>.json` for full auditability.
   (measured numbers), interpretation (limitations-flagged), and
   literature-untested items (marked "Not yet evaluated").
 - Generation-quality claims are explicitly provisional pending a real LLM.
+- ABAC ablation numbers (Q-031–034, per-user differential) are measured
+  artifacts of `results/runs_abac/` and `results/abac_comparison.md`.

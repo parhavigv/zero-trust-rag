@@ -1,0 +1,13 @@
+{
+  "version": "abac-v1",
+  "description": "ABAC hybrid policy: RBAC grants gated by attribute predicates (paper eq. 2).",
+  "rules": {
+    "tenant_scope": "strict",
+    "public": "all",
+    "internal": "same_department",
+    "confidential": "explicit_allowed_roles",
+    "restricted": "explicit_allowed_roles"
+  },
+  "overrides": [],
+  "attr_mode": true
+}

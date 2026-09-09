@@ -4,56 +4,130 @@
     "name": "Alice Wang",
     "role": "HR_MANAGER",
     "department": "HR",
-    "tenant_id": "tenant-acme"
+    "tenant_id": "tenant-acme",
+    "max_sensitivity": "HIGH",
+    "business_units": [
+      "HR"
+    ],
+    "clearance": "elevated",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "grace",
     "name": "Grace Li",
     "role": "HR_ADMIN",
     "department": "HR",
-    "tenant_id": "tenant-acme"
+    "tenant_id": "tenant-acme",
+    "max_sensitivity": "CRITICAL",
+    "business_units": [
+      "HR"
+    ],
+    "clearance": "elevated",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "bob",
     "name": "Bob Chen",
     "role": "ENGINEER",
     "department": "Engineering",
-    "tenant_id": "tenant-acme"
+    "tenant_id": "tenant-acme",
+    "max_sensitivity": "HIGH",
+    "business_units": [
+      "Engineering"
+    ],
+    "clearance": "standard",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "carol",
     "name": "Carol Kim",
     "role": "FINANCE_ANALYST",
     "department": "Finance",
-    "tenant_id": "tenant-acme"
+    "tenant_id": "tenant-acme",
+    "max_sensitivity": "HIGH",
+    "business_units": [
+      "Finance"
+    ],
+    "clearance": "standard",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "dave",
     "name": "Dave Rao",
     "role": "SALES_REP",
     "department": "Sales",
-    "tenant_id": "tenant-acme"
+    "tenant_id": "tenant-acme",
+    "max_sensitivity": "MEDIUM",
+    "business_units": [
+      "Sales"
+    ],
+    "clearance": "standard",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "frank",
     "name": "Frank Osei",
     "role": "LEGAL_COUNSEL",
     "department": "Legal",
-    "tenant_id": "tenant-acme"
+    "tenant_id": "tenant-acme",
+    "max_sensitivity": "HIGH",
+    "business_units": [
+      "Legal"
+    ],
+    "clearance": "standard",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "eve",
     "name": "Eve Novak",
     "role": "EXECUTIVE_VP",
     "department": "Executive",
-    "tenant_id": "tenant-acme"
+    "tenant_id": "tenant-acme",
+    "max_sensitivity": "CRITICAL",
+    "business_units": [
+      "Executive",
+      "HR",
+      "Finance"
+    ],
+    "clearance": "elevated",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "mallory",
     "name": "Mallory Stone",
     "role": "ENGINEER",
     "department": "Engineering",
-    "tenant_id": "tenant-beta"
+    "tenant_id": "tenant-beta",
+    "max_sensitivity": "HIGH",
+    "business_units": [
+      "Engineering"
+    ],
+    "clearance": "standard",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   },
   {
     "user_id": "zombie",
@@ -61,6 +135,13 @@
     "role": "EMPLOYEE",
     "department": "Sales",
     "tenant_id": "tenant-acme",
-    "enabled": false
+    "enabled": false,
+    "max_sensitivity": "LOW",
+    "business_units": [],
+    "clearance": "standard",
+    "time_window": [
+      "00:00:00",
+      "23:59:59"
+    ]
   }
 ]

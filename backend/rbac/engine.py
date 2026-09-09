@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 from backend.models import Decision, Document, User
+from backend.rbac.attr_predicates import satisfies
 
 
 class PolicyError(Exception):
@@ -97,33 +98,71 @@ def allow(user: User, doc: Document, policy: Policy, now: str = "") -> Decision:
 
     rules = policy.ruleset()
 
-    # Rule 4 — PUBLIC (tenant match already required)
-    if doc.classification == "PUBLIC" and rules["public"] == "all":
-        return dec(True, "rule4", "public document, tenant match", "classification")
+    # ABAC gate (Section F, eq. 2): when attribute mode is enabled, a coarse
+    # RBAC grant below is only sufficient if the document's attributes also
+    # satisfy the user's attribute predicates. We evaluate it once and reuse it
+    # across the grant rules so the conjunction is exactly one ABAC clause.
+    if policy.attr_mode:
+        attr_ok, attr_results = satisfies(user, doc, now=ts)
 
-    # Rule 5 — INTERNAL same-department
-    if doc.classification == "INTERNAL" and rules["internal"] == "same_department":
-        if user.department == doc.department:
-            return dec(True, "rule5", "internal, same department", "department")
-        return dec(False, "rule5", "internal, cross-department", "department")
+        def gate(rule: str, eff: str) -> Decision | None:
+            if attr_ok:
+                return None
+            return dec(False, f"{rule}+abac", "ABAC predicate failed: "
+                       + "; ".join(f"{r.reason}" for r in attr_results.values() if not r.satisfied), eff)
+    else:
+        # Rule 4 — PUBLIC (tenant match already required)
+        if doc.classification == "PUBLIC" and rules["public"] == "all":
+            return dec(True, "rule4", "public document, tenant match", "classification")
 
-    # Rule 6 — CONFIDENTIAL / RESTRICTED via explicit allowed_roles
-    # Rule 7 — override. Rule 8 — deny by default (in order of evaluation:
-    # explicit allow-list wins, then override, then default deny).
-    if doc.classification in ("CONFIDENTIAL", "RESTRICTED"):
-        if user.role in doc.allowed_roles:
-            return dec(True, "rule6", f"role {user.role} in allowed_roles", "allowed_roles")
+        # Rule 5 — INTERNAL same-department
+        if doc.classification == "INTERNAL" and rules["internal"] == "same_department":
+            if user.department == doc.department:
+                return dec(True, "rule5", "internal, same department", "department")
+            return dec(False, "rule5", "internal, cross-department", "department")
+
+        # Rule 6 — CONFIDENTIAL / RESTRICTED via explicit allowed_roles
+        # Rule 7 — override. Rule 8 — deny by default.
+        if doc.classification in ("CONFIDENTIAL", "RESTRICTED"):
+            if user.role in doc.allowed_roles:
+                return dec(True, "rule6", f"role {user.role} in allowed_roles", "allowed_roles")
+            for ov in policy.overrides:
+                if ov.role == user.role and ov.department == doc.department and doc.classification in ov.classifications:
+                    return dec(True, "rule7", f"override {ov.role}@{ov.department}", "override")
+            return dec(False, "rule8", f"role {user.role} not allowed for {doc.classification}", "allowed_roles")
+
+        # Rule 7 — policy override (non-confidential path)
         for ov in policy.overrides:
             if ov.role == user.role and ov.department == doc.department and doc.classification in ov.classifications:
                 return dec(True, "rule7", f"override {ov.role}@{ov.department}", "override")
+
+        # Rule 3/8 — deny by default
+        return dec(False, "rule8", "deny by default", "classification")
+
+    # ---- Attribute-mode path: resolve the RBAC grant, then AND it with the
+    #      attribute predicate (eq-2: exists role grant AND attributes hold).
+    def with_attr(rule: str, eff: str) -> Decision:
+        g = gate(rule, eff)
+        if g is not None:
+            return g
+        return dec(True, f"{rule}+abac", "grant + attributes satisfied", eff)
+
+    if doc.classification == "PUBLIC" and rules["public"] == "all":
+        return with_attr("rule4", "classification")
+
+    if doc.classification == "INTERNAL" and rules["internal"] == "same_department":
+        if user.department != doc.department:
+            return dec(False, "rule5", "internal, cross-department", "department")
+        return with_attr("rule5", "department")
+
+    if doc.classification in ("CONFIDENTIAL", "RESTRICTED"):
+        if user.role in doc.allowed_roles:
+            return with_attr("rule6", "allowed_roles")
+        for ov in policy.overrides:
+            if ov.role == user.role and ov.department == doc.department and doc.classification in ov.classifications:
+                return with_attr("rule7", "override")
         return dec(False, "rule8", f"role {user.role} not allowed for {doc.classification}", "allowed_roles")
 
-    # Rule 7 — policy override (non-confidential path)
-    for ov in policy.overrides:
-        if ov.role == user.role and ov.department == doc.department and doc.classification in ov.classifications:
-            return dec(True, "rule7", f"override {ov.role}@{ov.department}", "override")
-
-    # Rule 3/8 — deny by default
     return dec(False, "rule8", "deny by default", "classification")
 
 

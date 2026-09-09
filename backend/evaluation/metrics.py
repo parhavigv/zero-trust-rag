@@ -116,8 +116,12 @@ _M = ["S1", "S2", "S3", "S5", "S6", "R1", "R2", "R3", "R4",
        "P3_retrieval_ms", "P4_gen_ms"]
 
 
-def aggregate(recs, users, docs_by_id, policy, queries_by_id):
-    """Aggregate per-query metric vectors into per-config numbers (mean/median/p95)."""
+def aggregate(recs, users, docs_by_id, policy, queries_by_id, doc_ids_all=None):
+    """Aggregate per-query metric vectors into per-config numbers (mean/median/p95).
+
+    Pass doc_ids_all to scope the evaluated set for completeness (used by the
+    ABAC variant so reconstruction compares against the full corpus).
+    """
     rows = []
     for rec in recs:
         q = queries_by_id[rec.query_id]

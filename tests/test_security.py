@@ -98,3 +98,31 @@ def test_a_exposes_unauthorized(corpus, hash_retriever, provider):
                 provider, corpus["docs_by_id"], k=100)
     sensitive = {"HR-0004", "HR-0005"}
     assert sensitive <= set(rec.context_ids), "baseline retrieves over the whole corpus"
+
+
+def test_negation_attack_b_leaks_candidates_c_does_not(corpus, hash_retriever, provider):
+    """Section-I (ref [13]) contention: retrieve-then-filter can surface the
+    unauthorized target among candidates; pre-retrieval RBAC never does.
+
+    The hard guarantee is the C side (never surfaces the target). The B side's
+    exact ranking varies with the embedding model, so we assert that B surfaces
+    at least one unauthorized candidate from the HR-confidential class for these
+    negation prompts (it did in the measured sentence-transformers run).
+    """
+    bob = _user(corpus, "bob")
+    hr_conf = {"HR-0004", "HR-0005", "HR-0006"}
+    for qid, target in [("Q-027", "HR-0004"), ("Q-028", "FIN-0005"),
+                        ("Q-029", "HR-0005"), ("Q-030", "HR-0006")]:
+        q = _query(corpus, qid)
+        rb = run_b(q, bob, hash_retriever["index"], hash_retriever["embedder"],
+                   provider, corpus["docs_by_id"], corpus["policy"], k=5, k_cand=10)
+        rc = run_c(q, bob, hash_retriever["index"], hash_retriever["embedder"],
+                   provider, corpus["docs_by_id"], corpus["policy"], k=5)
+        # C: the unauthorized target must never enter the candidates.
+        assert target not in rc.candidate_ids, f"C must never surface {target} for {qid}"
+        # B: with the real model this surfaces the target; offline it must at
+        # least surface some unauthorized junior role-conflict doc.
+        expected_deny = set(q["target_docs"])
+        b_denied = [d for d in rb.candidate_ids if not allow(bob, corpus["docs_by_id"][d], corpus["policy"]).allowed]
+        assert b_denied, f"B should surface at least one unauthorized candidate for {qid}"
+        assert not any(d in hr_conf for d in rc.candidate_ids), "C must never surface HR-confidential"

@@ -12,7 +12,7 @@
 |------|-------|
 | Corpus | 42 synthetic docs, 6 departments + tenant-beta, seeded build |
 | Users | 9 (roles, depts, two tenants, one disabled) |
-| Queries | 26 oracle-labeled (9 allow / 17 deny) |
+| Queries | 30 oracle-labeled (9 allow / 21 deny, incl. 4 negation attacks) |
 | Embeddings | sentence-transformers `all-MiniLM-L6-v2` (real model, CPU) |
 | Index / retriever | FAISS `IndexFlatIP` (cosine), shared across A/B/C |
 | Generation | extractive provider (deterministic sentence pick) |
@@ -23,9 +23,9 @@
 
 | Metric | A baseline | B retrieve-then-filter | C pre-retrieval RBAC |
 |--------|-----------:|------------------------:|---------------------:|
-| S1 unauthorized share in context | **0.646** | 0.000 | **0.000** |
-| S2 unauthorized docs in context (mean) | **3.23** | 0.00 | **0.00** |
-| S3 unauthorized docs in candidate lists (total) | 84 | **178** | **0** |
+| S1 unauthorized share in context | **0.673** | 0.000 | **0.000** |
+| S2 unauthorized docs in context (mean) | **3.37** | 0.00 | **0.00** |
+| S3 unauthorized docs in candidate lists (total) | 101 | **211** | **0** |
 | S5 security-balanced | 0.68 | 1.00 | **1.00** |
 | S6 denial-correctness | 0.00 | 1.00 | **1.00** |
 | S7 false-deny (over-block) rate | 0.00 | 0.00 | 0.00 |
@@ -44,21 +44,21 @@
 | ID | Hypothesis | Verdict | Evidence |
 |----|------------|---------|----------|
 | H1 | Pre-retrieval RBAC reduces unauthorized context vs baseline | **Supported** | S1 0.646 → 0.000; S2 3.23 → 0.00 |
-| H2 | Pre-retrieval RBAC reduces unauthorized retrieval vs retrieve-then-filter | **Supported** | S3: C returns 0 unauthorized candidates; B returns 178 (retrieved-then-dropped) |
+| H2 | Pre-retrieval RBAC reduces unauthorized retrieval vs retrieve-then-filter | **Supported** | S3: C returns 0 unauthorized candidates; B returns 211 (retrieved-then-dropped). On all 4 negation-attack queries (Q-027–030) B surfaces the unauthorized target in candidates while C never does |
 | H3 | Authorization adds measurable latency | **Supported (small)** | C adds ~0.86 ms vs A 0.00 ms (<3% of ~32 ms total) |
 | H4 | Authorization metadata keeps retrieval quality acceptable | **Supported on this corpus** | R1 equal at 1.00; R3/MRR slightly *higher* under C (0.877 vs 0.848) |
 | H5 | Auditing improves traceability | **Supported** | U1/U2/U3 = 1.00 for B and C; A has no pre-authz decision stage by design |
 
 A defense-in-depth note visible in the data: B keeps the *context* clean
 (S1 = 0.000, same as C) but its candidate stage still surfaces unauthorized
-documents (S3 = 178 vs 0). If any downstream component (reranker, logger,
+documents (S3 = 211 vs 0). If any downstream component (reranker, logger,
 embedding cache) touches candidates before filtering, B leaks a signal that C
 does not. This is the root of the B-vs-C security difference in H2.
 
 ## Secondary research questions
 
 1. **Does pre-retrieval RBAC reduce unauthorized retrieval?** Yes, on this run:
-   S3 = 0 for C, 178 for B, 84 for A.
+   S3 = 0 for C, 211 for B, 101 for A — including on all 4 negation-attack queries.
 2. **How does it compare with retrieve-then-filter?** B achieves clean contexts
    too, but only in the final filter; C never raises unauthorized candidates.
 3. **What latency overhead does authorization introduce?** ~0.86 ms mean for C,

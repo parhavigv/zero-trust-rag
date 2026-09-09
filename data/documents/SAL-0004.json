@@ -1,0 +1,14 @@
+{
+  "document_id": "SAL-0004",
+  "title": "Sales confidential briefing",
+  "department": "Sales",
+  "classification": "CONFIDENTIAL",
+  "allowed_roles": [
+    "SALES_REP"
+  ],
+  "owner": "sales-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-06-01",
+  "sensitivity_level": "HIGH",
+  "content": "CONFIDENTIAL pipeline review: the current-quarter funnel holds 121M in qualified pipeline with 13 forecast close opportunities; the funnel details are confidential to Sales leadership."
+}

@@ -1,0 +1,21 @@
+{
+  "document_id": "ENG-0001",
+  "title": "Public overview of Engineering",
+  "department": "Engineering",
+  "classification": "PUBLIC",
+  "allowed_roles": [
+    "EMPLOYEE",
+    "ENGINEER",
+    "HR_MANAGER",
+    "HR_ADMIN",
+    "FINANCE_ANALYST",
+    "SALES_REP",
+    "LEGAL_COUNSEL",
+    "EXECUTIVE_VP"
+  ],
+  "owner": "engineering-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-01-15",
+  "sensitivity_level": "LOW",
+  "content": "Engineering at Acme builds the core product platform using cloud services, with 104 repositories and 25 delivery squads. The department publishes an open engineering blog and runs demo days."
+}

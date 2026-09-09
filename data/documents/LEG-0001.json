@@ -1,0 +1,21 @@
+{
+  "document_id": "LEG-0001",
+  "title": "Public overview of Legal",
+  "department": "Legal",
+  "classification": "PUBLIC",
+  "allowed_roles": [
+    "EMPLOYEE",
+    "ENGINEER",
+    "HR_MANAGER",
+    "HR_ADMIN",
+    "FINANCE_ANALYST",
+    "SALES_REP",
+    "LEGAL_COUNSEL",
+    "EXECUTIVE_VP"
+  ],
+  "owner": "legal-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-01-15",
+  "sensitivity_level": "LOW",
+  "content": "Legal at Acme supports contracts, compliance, IP, and employment matters. The team publishes standard agreements and compliance guidance internally."
+}

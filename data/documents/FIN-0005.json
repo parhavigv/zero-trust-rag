@@ -1,0 +1,14 @@
+{
+  "document_id": "FIN-0005",
+  "title": "Finance confidential details",
+  "department": "Finance",
+  "classification": "CONFIDENTIAL",
+  "allowed_roles": [
+    "FINANCE_ANALYST"
+  ],
+  "owner": "finance-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-06-01",
+  "sensitivity_level": "HIGH",
+  "content": "CONFIDENTIAL budget variance: the marketing and sales budgets show 10% overspend versus plan; reallocation options are confidential to Finance leadership and the budget owners."
+}

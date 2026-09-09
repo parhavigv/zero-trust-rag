@@ -1,0 +1,16 @@
+{
+  "document_id": "HR-0006",
+  "title": "HR restricted material",
+  "department": "HR",
+  "classification": "RESTRICTED",
+  "allowed_roles": [
+    "HR_MANAGER",
+    "HR_ADMIN",
+    "EXECUTIVE_VP"
+  ],
+  "owner": "hr-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-09-01",
+  "sensitivity_level": "CRITICAL",
+  "content": "RESTRICTED executive compensation terms: the CEO and executive team have custom equity and bonus structures that are confidential, including any change-of-control clauses. This document is restricted to HR administration and the executive office."
+}

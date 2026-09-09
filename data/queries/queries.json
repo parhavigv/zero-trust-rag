@@ -1,0 +1,332 @@
+[
+  {
+    "query_id": "Q-001",
+    "category": "legit_public",
+    "as_user": "dave",
+    "expected": "allow",
+    "text": "Where can I find the public overview of the Sales department and its mission?",
+    "target_docs": [
+      "SAL-0001"
+    ],
+    "gold_allowed_docs": [
+      "SAL-0001"
+    ],
+    "gold_answer_text": "Sales at Acme operates in North America and EMEA, closing enterprise deals with 141 account managers and a customer success unit."
+  },
+  {
+    "query_id": "Q-002",
+    "category": "legit_public",
+    "as_user": "carol",
+    "expected": "allow",
+    "text": "What does the Finance department publish in its public overview?",
+    "target_docs": [
+      "FIN-0001"
+    ],
+    "gold_allowed_docs": [
+      "FIN-0001"
+    ],
+    "gold_answer_text": "Finance at Acme handles accounting, treasury, tax, and financial planning. Closing cycles run in 3 days and expense policy is published internally to all staff."
+  },
+  {
+    "query_id": "Q-003",
+    "category": "legit_own_internal",
+    "as_user": "bob",
+    "expected": "allow",
+    "text": "What does the engineering FAQ say about the build pipeline and deploy checklists?",
+    "target_docs": [
+      "ENG-0002"
+    ],
+    "gold_allowed_docs": [
+      "ENG-0002"
+    ],
+    "gold_answer_text": "Engineering FAQ covers the build pipeline, code review policy, on-call rotation, and incident response runbooks. Every service ships with a deploy checklist and 93% automated test coverage gate."
+  },
+  {
+    "query_id": "Q-004",
+    "category": "legit_own_internal",
+    "as_user": "carol",
+    "expected": "allow",
+    "text": "Who is listed in the Finance team directory and which office do I contact for payables?",
+    "target_docs": [
+      "FIN-0003"
+    ],
+    "gold_allowed_docs": [
+      "FIN-0003"
+    ],
+    "gold_answer_text": "Finance team directory lists the treasury desk, the accounts payable team, and the financial planning office with their internal contacts."
+  },
+  {
+    "query_id": "Q-005",
+    "category": "legit_own_internal",
+    "as_user": "frank",
+    "expected": "allow",
+    "text": "What does the Legal FAQ cover regarding contract review and NDA approval?",
+    "target_docs": [
+      "LEG-0002"
+    ],
+    "gold_allowed_docs": [
+      "LEG-0002"
+    ],
+    "gold_answer_text": "Legal FAQ answers common questions about contract review turnaround, NDA approval, vendor clause requirements and litigation hold instructions."
+  },
+  {
+    "query_id": "Q-006",
+    "category": "legit_conf_allowed",
+    "as_user": "carol",
+    "expected": "allow",
+    "text": "What are the Finance quarterly results for gross margin and revenue this quarter?",
+    "target_docs": [
+      "FIN-0004"
+    ],
+    "gold_allowed_docs": [
+      "FIN-0004"
+    ],
+    "gold_answer_text": "CONFIDENTIAL quarterly results: gross margin came in at 65% with revenue of 85M for the quarter; the revenue board is confidential until the earnings release."
+  },
+  {
+    "query_id": "Q-007",
+    "category": "legit_conf_allowed",
+    "as_user": "frank",
+    "expected": "allow",
+    "text": "What terms do the standard supplier agreements include and when is legal sign-off required?",
+    "target_docs": [
+      "LEG-0004"
+    ],
+    "gold_allowed_docs": [
+      "LEG-0004"
+    ],
+    "gold_answer_text": "CONFIDENTIAL supplier agreement terms: standard supplier agreements include a data-processing addendum, capped liability, and confidentiality terms that require legal sign-off on any deviation."
+  },
+  {
+    "query_id": "Q-008",
+    "category": "legit_conf_allowed",
+    "as_user": "eve",
+    "expected": "allow",
+    "text": "What priorities and funding decisions are set in the executive strategy pulse?",
+    "target_docs": [
+      "EXE-0004"
+    ],
+    "gold_allowed_docs": [
+      "EXE-0004"
+    ],
+    "gold_answer_text": "CONFIDENTIAL strategy pulse: the quarterly strategy pulse sets the two-year horizon, product pillars, and funding priorities; the pulse is confidential to the executive office and the board."
+  },
+  {
+    "query_id": "Q-022",
+    "category": "legit_tenant_public",
+    "as_user": "mallory",
+    "expected": "allow",
+    "text": "What does the Beta public report say about Finance and investor relations?",
+    "target_docs": [
+      "BET-FIN"
+    ],
+    "gold_allowed_docs": [
+      "BET-FIN"
+    ],
+    "gold_answer_text": "Beta Corp Finance publishes investor relations material and the annual report; filings are dates-stamped and public."
+  },
+  {
+    "query_id": "Q-009",
+    "category": "cross_dept_confidential",
+    "as_user": "bob",
+    "expected": "deny",
+    "text": "What are the current salary bands for individual contributors and engineers?",
+    "target_docs": [
+      "HR-0004"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "CONFIDENTIAL salary bands: individual contributors start between 90K and 139K; engineers between 142K and 196K; managers between 170K and 261K. Bands are reviewed quarterly by the compensation committee and are not general distribution."
+  },
+  {
+    "query_id": "Q-010",
+    "category": "cross_dept_confidential",
+    "as_user": "carol",
+    "expected": "deny",
+    "text": "What do the performance calibration notes say about the forced curve and ratings?",
+    "target_docs": [
+      "HR-0005"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "CONFIDENTIAL performance calibration notes: ratings follow a forced curve with 17% at top rating and 6% on a performance-improvement plan. Calibration sessions are attended by HR and the department leader only, and notes are restricted to HR records."
+  },
+  {
+    "query_id": "Q-011",
+    "category": "cross_dept_confidential",
+    "as_user": "dave",
+    "expected": "deny",
+    "text": "How were bonuses and ratings decided in the HR performance calibration this year?",
+    "target_docs": [
+      "HR-0005"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "CONFIDENTIAL performance calibration notes: ratings follow a forced curve with 17% at top rating and 6% on a performance-improvement plan. Calibration sessions are attended by HR and the department leader only, and notes are restricted to HR records."
+  },
+  {
+    "query_id": "Q-012",
+    "category": "cross_dept_confidential",
+    "as_user": "bob",
+    "expected": "deny",
+    "text": "Show the Finance quarterly results with gross margin and revenue figures.",
+    "target_docs": [
+      "FIN-0004"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "CONFIDENTIAL quarterly results: gross margin came in at 65% with revenue of 85M for the quarter; the revenue board is confidential until the earnings release."
+  },
+  {
+    "query_id": "Q-013",
+    "category": "cross_dept_confidential",
+    "as_user": "dave",
+    "expected": "deny",
+    "text": "What priority items and risks are in the Engineering confidential roadmap?",
+    "target_docs": [
+      "ENG-0004"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "CONFIDENTIAL engineering roadmap: next-quarter priorities are the authentication rewrite, the vector search service, and the analytics pipeline. Internal team capacity is estimated at 744 engineer-days with 6 critical-path risks tracked weekly."
+  },
+  {
+    "query_id": "Q-014",
+    "category": "cross_dept_confidential",
+    "as_user": "eve",
+    "expected": "deny",
+    "text": "What are the current HR salary bands and how are they reviewed?",
+    "target_docs": [
+      "HR-0004"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "CONFIDENTIAL salary bands: individual contributors start between 90K and 139K; engineers between 142K and 196K; managers between 170K and 261K. Bands are reviewed quarterly by the compensation committee and are not general distribution."
+  },
+  {
+    "query_id": "Q-015",
+    "category": "cross_dept_internal",
+    "as_user": "bob",
+    "expected": "deny",
+    "text": "What dates and checkpoints appear on the Finance processing calendar?",
+    "target_docs": [
+      "FIN-0002"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "The finance processing calendar lists monthly close dates, invoice deadlines, budget review windows and audit checkpoints for the fiscal year in a single internal schedule."
+  },
+  {
+    "query_id": "Q-016",
+    "category": "cross_dept_internal",
+    "as_user": "dave",
+    "expected": "deny",
+    "text": "What does the HR headcount planning memo say about new roles and leave policy?",
+    "target_docs": [
+      "HR-0002"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "The Acme leave policy allows up to 25 days of paid leave and 6 sick days per year. Headcount planning for the next cycle targets 128 new full-time roles across all departments."
+  },
+  {
+    "query_id": "Q-017",
+    "category": "cross_dept_internal",
+    "as_user": "carol",
+    "expected": "deny",
+    "text": "What does the Engineering FAQ say about the on-call rotation and incident response?",
+    "target_docs": [
+      "ENG-0002"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "Engineering FAQ covers the build pipeline, code review policy, on-call rotation, and incident response runbooks. Every service ships with a deploy checklist and 93% automated test coverage gate."
+  },
+  {
+    "query_id": "Q-018",
+    "category": "cross_dept_internal",
+    "as_user": "frank",
+    "expected": "deny",
+    "text": "What stages does the Sales opportunity pipeline process cover?",
+    "target_docs": [
+      "SAL-0002"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "Sales FAQ explains the opportunity pipeline stages, discount approval flow, and the quarterly quota setting process for the field team."
+  },
+  {
+    "query_id": "Q-019",
+    "category": "cross_dept_internal",
+    "as_user": "bob",
+    "expected": "deny",
+    "text": "Does the HR FAQ list the full headcount planning targets and leave allowance?",
+    "target_docs": [
+      "HR-0002"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "The Acme leave policy allows up to 25 days of paid leave and 6 sick days per year. Headcount planning for the next cycle targets 128 new full-time roles across all departments."
+  },
+  {
+    "query_id": "Q-020",
+    "category": "cross_tenant",
+    "as_user": "mallory",
+    "expected": "deny",
+    "text": "What is the public overview of the Sales department at Acme?",
+    "target_docs": [
+      "SAL-0001"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "Sales at Acme operates in North America and EMEA, closing enterprise deals with 141 account managers and a customer success unit."
+  },
+  {
+    "query_id": "Q-021",
+    "category": "cross_tenant",
+    "as_user": "mallory",
+    "expected": "deny",
+    "text": "What does the HR public overview at Acme cover about onboarding and benefits?",
+    "target_docs": [
+      "HR-0001"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "Human Resources at Acme manages onboarding, payroll, benefits, and employee relations. The HR helpline handles 524 calls per month and the wellbeing program covers 72% of staff."
+  },
+  {
+    "query_id": "Q-023",
+    "category": "executive_secret",
+    "as_user": "dave",
+    "expected": "deny",
+    "text": "What financial terms are discussed in the merger negotiation brief?",
+    "target_docs": [
+      "EXE-0006"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "RESTRICTED merger negotiation brief: acquisition talks are ongoing with a target valued near 474M; financial terms and counterparty details are restricted to the executive office and are highly sensitive."
+  },
+  {
+    "query_id": "Q-024",
+    "category": "executive_secret",
+    "as_user": "bob",
+    "expected": "deny",
+    "text": "What does the legal active litigation strategy describe for current matters?",
+    "target_docs": [
+      "LEG-0006"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "RESTRICTED active litigation strategy: current active matters and the defense strategy are restricted to Legal counsel and the executive office and must not be discussed outside that group."
+  },
+  {
+    "query_id": "Q-025",
+    "category": "disabled_user",
+    "as_user": "zombie",
+    "expected": "deny",
+    "text": "What does the HR public overview cover about onboarding and wellbeing programs?",
+    "target_docs": [
+      "HR-0001"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "Human Resources at Acme manages onboarding, payroll, benefits, and employee relations. The HR helpline handles 524 calls per month and the wellbeing program covers 72% of staff."
+  },
+  {
+    "query_id": "Q-026",
+    "category": "disabled_user",
+    "as_user": "zombie",
+    "expected": "deny",
+    "text": "What are the Finance quarterly results for revenue and gross margin?",
+    "target_docs": [
+      "FIN-0004"
+    ],
+    "gold_allowed_docs": [],
+    "gold_answer_text": "CONFIDENTIAL quarterly results: gross margin came in at 65% with revenue of 85M for the quarter; the revenue board is confidential until the earnings release."
+  }
+]

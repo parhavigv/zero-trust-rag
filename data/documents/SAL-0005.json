@@ -1,0 +1,14 @@
+{
+  "document_id": "SAL-0005",
+  "title": "Sales confidential details",
+  "department": "Sales",
+  "classification": "CONFIDENTIAL",
+  "allowed_roles": [
+    "SALES_REP"
+  ],
+  "owner": "sales-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-06-01",
+  "sensitivity_level": "HIGH",
+  "content": "CONFIDENTIAL discount authority: discount thresholds and approval matrices for large deals are confidential to the deal desk and regional leadership."
+}

@@ -1,0 +1,13 @@
+{
+  "version": "1",
+  "description": "Seed RBAC policy for the research prototype. Rules follow docs/rbac-policy-model.md.",
+  "rules": {
+    "tenant_scope": "strict",
+    "public": "all",
+    "internal": "same_department",
+    "confidential": "explicit_allowed_roles",
+    "restricted": "explicit_allowed_roles"
+  },
+  "overrides": [],
+  "attr_mode": false
+}

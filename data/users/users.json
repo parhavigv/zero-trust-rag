@@ -1,0 +1,66 @@
+[
+  {
+    "user_id": "alice",
+    "name": "Alice Wang",
+    "role": "HR_MANAGER",
+    "department": "HR",
+    "tenant_id": "tenant-acme"
+  },
+  {
+    "user_id": "grace",
+    "name": "Grace Li",
+    "role": "HR_ADMIN",
+    "department": "HR",
+    "tenant_id": "tenant-acme"
+  },
+  {
+    "user_id": "bob",
+    "name": "Bob Chen",
+    "role": "ENGINEER",
+    "department": "Engineering",
+    "tenant_id": "tenant-acme"
+  },
+  {
+    "user_id": "carol",
+    "name": "Carol Kim",
+    "role": "FINANCE_ANALYST",
+    "department": "Finance",
+    "tenant_id": "tenant-acme"
+  },
+  {
+    "user_id": "dave",
+    "name": "Dave Rao",
+    "role": "SALES_REP",
+    "department": "Sales",
+    "tenant_id": "tenant-acme"
+  },
+  {
+    "user_id": "frank",
+    "name": "Frank Osei",
+    "role": "LEGAL_COUNSEL",
+    "department": "Legal",
+    "tenant_id": "tenant-acme"
+  },
+  {
+    "user_id": "eve",
+    "name": "Eve Novak",
+    "role": "EXECUTIVE_VP",
+    "department": "Executive",
+    "tenant_id": "tenant-acme"
+  },
+  {
+    "user_id": "mallory",
+    "name": "Mallory Stone",
+    "role": "ENGINEER",
+    "department": "Engineering",
+    "tenant_id": "tenant-beta"
+  },
+  {
+    "user_id": "zombie",
+    "name": "Zombie Account",
+    "role": "EMPLOYEE",
+    "department": "Sales",
+    "tenant_id": "tenant-acme",
+    "enabled": false
+  }
+]

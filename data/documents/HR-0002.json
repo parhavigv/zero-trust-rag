@@ -1,0 +1,15 @@
+{
+  "document_id": "HR-0002",
+  "title": "HR operations FAQ",
+  "department": "HR",
+  "classification": "INTERNAL",
+  "allowed_roles": [
+    "HR_MANAGER",
+    "HR_ADMIN"
+  ],
+  "owner": "hr-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-03-10",
+  "sensitivity_level": "MEDIUM",
+  "content": "The Acme leave policy allows up to 25 days of paid leave and 6 sick days per year. Headcount planning for the next cycle targets 128 new full-time roles across all departments."
+}

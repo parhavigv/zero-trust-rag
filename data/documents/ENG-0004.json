@@ -1,0 +1,14 @@
+{
+  "document_id": "ENG-0004",
+  "title": "Engineering confidential briefing",
+  "department": "Engineering",
+  "classification": "CONFIDENTIAL",
+  "allowed_roles": [
+    "ENGINEER"
+  ],
+  "owner": "engineering-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-06-01",
+  "sensitivity_level": "HIGH",
+  "content": "CONFIDENTIAL engineering roadmap: next-quarter priorities are the authentication rewrite, the vector search service, and the analytics pipeline. Internal team capacity is estimated at 744 engineer-days with 6 critical-path risks tracked weekly."
+}

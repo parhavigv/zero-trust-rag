@@ -1,0 +1,14 @@
+{
+  "document_id": "SAL-0003",
+  "title": "Sales team directory",
+  "department": "Sales",
+  "classification": "INTERNAL",
+  "allowed_roles": [
+    "SALES_REP"
+  ],
+  "owner": "sales-admin@acme.io",
+  "tenant_id": "tenant-acme",
+  "created_at": "2025-03-10",
+  "sensitivity_level": "MEDIUM",
+  "content": "Sales team directory lists the regional directors, deal desk, and customer success managers with their territories."
+}

@@ -1,10 +1,40 @@
 """Authorization audit store (SQLite). Append-only, reconstructable."""
 from __future__ import annotations
 
-import json
 import sqlite3
 import time
 from pathlib import Path
+
+_APPEND_ONLY_TRIGGERS = (
+    """
+    CREATE TRIGGER IF NOT EXISTS decisions_no_update
+    BEFORE UPDATE ON decisions
+    BEGIN
+      SELECT RAISE(ABORT, 'audit decisions are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS decisions_no_delete
+    BEFORE DELETE ON decisions
+    BEGIN
+      SELECT RAISE(ABORT, 'audit decisions are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS runs_no_update
+    BEFORE UPDATE ON runs
+    BEGIN
+      SELECT RAISE(ABORT, 'audit runs are append-only');
+    END
+    """,
+    """
+    CREATE TRIGGER IF NOT EXISTS runs_no_delete
+    BEFORE DELETE ON runs
+    BEGIN
+      SELECT RAISE(ABORT, 'audit runs are append-only');
+    END
+    """,
+)
 
 
 class AuditStore:
@@ -15,6 +45,12 @@ class AuditStore:
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = None
         self._init_db()
+
+    def __enter__(self) -> "AuditStore":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        self.close()
 
     def _connect(self) -> sqlite3.Connection:
         if self._conn is None:
@@ -47,6 +83,8 @@ class AuditStore:
             )
             """
         )
+        for sql in _APPEND_ONLY_TRIGGERS:
+            conn.execute(sql)
         conn.commit()
 
     def log_decision(self, decision, query_id: str, run_id: str):
@@ -69,7 +107,6 @@ class AuditStore:
             ),
         )
         conn.commit()
-        self._flush_runs_if_due()
 
     def log_run(self, run_id, config, query_id, user_id, lat_authz_ms=-1.0,
                 lat_retrieval_ms=-1.0, lat_gen_ms=-1.0, lat_audit_ms=-1.0,
@@ -89,9 +126,6 @@ class AuditStore:
             ),
         )
         conn.commit()
-
-    def _flush_runs_if_due(self):
-        pass
 
     def decisions_for_query(self, query_id: str) -> list[dict]:
         conn = self._connect()
